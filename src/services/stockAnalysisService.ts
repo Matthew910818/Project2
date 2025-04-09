@@ -1,5 +1,3 @@
-// Stock analysis service - integrates all analysis components
-
 import { analyzeSentiment, combineAnalysis, StockAnalysisResult } from './openaiService';
 import { calculateTechnicalIndicators, TechnicalIndicators } from './technicalAnalysisService';
 import { 
@@ -22,30 +20,28 @@ export interface AnalysisResponse {
   error?: string;
 }
 
-// Check if OpenAI API is configured properly
 const isOpenAIConfigured = (): boolean => {
   const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
   return !!(apiKey && apiKey.trim().length > 0);
 };
 
-// Helper function to get descriptions of technical criteria that were met
 const getMetCriteriaDescriptions = (
   technicalAnalysis: TechnicalIndicators
 ): string[] => {
   const metCriteria: string[] = [];
   
-  // Check RSI (oversold condition)
+  // Check RSI 
   if (technicalAnalysis.rsi != null && 
       technicalAnalysis.rsi < DEFAULT_TECHNICAL_CRITERIA.rsiThreshold!) {
     metCriteria.push(`RSI is ${technicalAnalysis.rsi.toFixed(2)}, below oversold threshold of ${DEFAULT_TECHNICAL_CRITERIA.rsiThreshold}`);
   }
   
-  // Check MACD (positive momentum)
+  // Check MACD 
   if (technicalAnalysis.macd != null && technicalAnalysis.macd > 0) {
     metCriteria.push(`MACD is positive at ${technicalAnalysis.macd.toFixed(2)}, indicating upward momentum`);
   }
   
-  // Check EMA alignment (uptrend)
+  // Check EMA alignment 
   if (technicalAnalysis.ema5 != null && 
       technicalAnalysis.ema10 != null && 
       technicalAnalysis.ema20 != null && 
@@ -54,7 +50,7 @@ const getMetCriteriaDescriptions = (
     metCriteria.push(`EMAs show uptrend pattern: EMA5 (${technicalAnalysis.ema5.toFixed(2)}) > EMA10 (${technicalAnalysis.ema10.toFixed(2)}) > EMA20 (${technicalAnalysis.ema20.toFixed(2)})`);
   }
   
-  // Check Stochastic (oversold condition)
+  // Check Stochastic 
   if (technicalAnalysis.stochasticK != null && 
       technicalAnalysis.stochasticK < DEFAULT_TECHNICAL_CRITERIA.stochasticOversold!) {
     metCriteria.push(`Stochastic K is ${technicalAnalysis.stochasticK.toFixed(2)}, below oversold threshold of ${DEFAULT_TECHNICAL_CRITERIA.stochasticOversold}`);
@@ -63,7 +59,6 @@ const getMetCriteriaDescriptions = (
   return metCriteria;
 };
 
-// Main function to analyze a stock
 export const analyzeStock = async (
   symbol: string,
   price: number,
@@ -86,7 +81,6 @@ export const analyzeStock = async (
       metTechnicalCriteria: []
     };
     
-    // Check API key configuration upfront
     if (!isOpenAIConfigured()) {
       console.warn('OpenAI API key not configured properly. Skipping sentiment analysis.');
       response.error = 'OpenAI API key not configured. Please add your API key to the .env file.';
@@ -96,7 +90,6 @@ export const analyzeStock = async (
         buyRecommendation: false
       };
     } else {
-      // Step 1: Perform sentiment analysis using OpenAI
       console.log('Performing sentiment analysis...');
       try {
         response.sentimentAnalysis = await analyzeSentiment(symbol);
@@ -112,18 +105,15 @@ export const analyzeStock = async (
       }
     }
     
-    // Step 2: Calculate technical indicators
     console.log('Calculating technical indicators...');
     try {
       response.technicalAnalysis = await calculateTechnicalIndicators(symbol, price);
       console.log('Technical analysis complete with indicators:', response.technicalAnalysis.indicators);
       
-      // Check if technical criteria are met for alerts
       if (meetsTechnicalCriteria(response.technicalAnalysis)) {
         console.log('Technical criteria met for alert');
         response.metTechnicalCriteria = getMetCriteriaDescriptions(response.technicalAnalysis);
         
-        // Send technical alert email
         if (shouldSendEmail && response.metTechnicalCriteria.length > 0) {
           console.log('Sending technical alert email...');
           try {
@@ -154,13 +144,10 @@ export const analyzeStock = async (
       }
     }
     
-    // Step 3: Make final recommendation based on combined analysis
     if (response.technicalAnalysis) {
       console.log('Generating final recommendation...');
       
-      // If OpenAI is not configured, generate recommendation based only on technical analysis
       if (!isOpenAIConfigured()) {
-        // Create a simple recommendation based on technical signals
         const bullishSignals = response.technicalAnalysis.indicators.filter(signal => 
           signal.toLowerCase().includes('bullish') || 
           signal.toLowerCase().includes('oversold')
@@ -199,7 +186,6 @@ export const analyzeStock = async (
             response.error = `Final recommendation failed: ${(error as Error).message}`;
           }
           
-          // Fallback to a basic recommendation
           response.finalRecommendation = {
             sentiment: 'neutral',
             explanation: `Could not generate recommendation: ${(error as Error).message}`,
@@ -209,7 +195,6 @@ export const analyzeStock = async (
       }
     }
     
-    // Step 4: Send email notification if recommended to buy
     if (shouldSendEmail && 
         response.finalRecommendation && 
         response.finalRecommendation.buyRecommendation && 

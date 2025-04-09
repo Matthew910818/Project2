@@ -1,5 +1,3 @@
-// Technical analysis service to calculate various technical indicators
-
 export interface HistoricalPrice {
   date: Date;
   open: number;
@@ -25,12 +23,8 @@ export interface TechnicalIndicators {
   indicators: string[];
 }
 
-// Fetch historical prices for a given symbol
-// This would typically come from a market data API like Alpha Vantage, Yahoo Finance, etc.
 export const fetchHistoricalPrices = async (symbol: string, days: number = 60): Promise<HistoricalPrice[]> => {
   try {
-    // In a real implementation, this would call an external API
-    // For now, we'll use dummy data or could integrate with a real data provider
     const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=${days}d&interval=1d`);
     
     if (!response.ok) {
@@ -71,7 +65,6 @@ export const fetchHistoricalPrices = async (symbol: string, days: number = 60): 
   }
 };
 
-// Calculate Exponential Moving Average (EMA)
 export const calculateEMA = (prices: number[], period: number): number[] => {
   if (prices.length === 0 || period <= 0 || period > prices.length) {
     return [];
@@ -79,8 +72,6 @@ export const calculateEMA = (prices: number[], period: number): number[] => {
   
   const ema = [];
   const multiplier = 2 / (period + 1);
-  
-  // First EMA is the SMA
   let sma = 0;
   for (let i = 0; i < period; i++) {
     sma += prices[i];
@@ -88,7 +79,6 @@ export const calculateEMA = (prices: number[], period: number): number[] => {
   sma /= period;
   ema.push(sma);
   
-  // Calculate EMA for each subsequent day
   for (let i = period; i < prices.length; i++) {
     ema.push((prices[i] - ema[ema.length - 1]) * multiplier + ema[ema.length - 1]);
   }
@@ -96,7 +86,6 @@ export const calculateEMA = (prices: number[], period: number): number[] => {
   return ema;
 };
 
-// Calculate Stochastic Oscillator
 export const calculateStochastic = (
   prices: HistoricalPrice[], 
   kPeriod: number = 14, 
@@ -108,7 +97,6 @@ export const calculateStochastic = (
   
   const ks: number[] = [];
   
-  // Calculate %K for each period
   for (let i = kPeriod - 1; i < prices.length; i++) {
     const period = prices.slice(i - kPeriod + 1, i + 1);
     const highestHigh = Math.max(...period.map(p => p.high));
@@ -123,7 +111,6 @@ export const calculateStochastic = (
     return { k: ks, d: [] };
   }
   
-  // Calculate %D (simple moving average of %K)
   const ds: number[] = [];
   for (let i = dPeriod - 1; i < ks.length; i++) {
     let sum = 0;
@@ -136,7 +123,6 @@ export const calculateStochastic = (
   return { k: ks, d: ds };
 };
 
-// Calculate Relative Strength Index (RSI)
 export const calculateRSI = (prices: HistoricalPrice[], period: number = 14): number[] => {
   if (prices.length <= period + 1) {
     return [];
@@ -146,7 +132,6 @@ export const calculateRSI = (prices: HistoricalPrice[], period: number = 14): nu
   const losses: number[] = [];
   const rsi: number[] = [];
   
-  // Calculate initial price changes
   for (let i = 1; i < prices.length; i++) {
     const change = prices[i].close - prices[i - 1].close;
     gains.push(change > 0 ? change : 0);
@@ -157,7 +142,6 @@ export const calculateRSI = (prices: HistoricalPrice[], period: number = 14): nu
     return [];
   }
   
-  // Calculate initial averages
   let avgGain = 0;
   let avgLoss = 0;
   
@@ -169,11 +153,9 @@ export const calculateRSI = (prices: HistoricalPrice[], period: number = 14): nu
   avgGain /= period;
   avgLoss /= period;
   
-  // Calculate first RSI
   let rs = avgGain / (avgLoss === 0 ? 0.001 : avgLoss); // Avoid division by zero
   rsi.push(100 - (100 / (1 + rs)));
   
-  // Calculate subsequent RSIs
   for (let i = period; i < gains.length; i++) {
     avgGain = ((avgGain * (period - 1)) + gains[i]) / period;
     avgLoss = ((avgLoss * (period - 1)) + losses[i]) / period;
@@ -185,7 +167,7 @@ export const calculateRSI = (prices: HistoricalPrice[], period: number = 14): nu
   return rsi;
 };
 
-// Calculate MACD (Moving Average Convergence Divergence)
+// Calculate MACD 
 export const calculateMACD = (
   prices: number[], 
   fastLength: number = 12, 
@@ -203,7 +185,7 @@ export const calculateMACD = (
     return { macd: [], signal: [], histogram: [] };
   }
   
-  // Align EMAs (they have different starting points)
+  // Align EMAs
   const macd: number[] = [];
   for (let i = slowLength - fastLength; i < fastEMA.length; i++) {
     macd.push(fastEMA[i] - slowEMA[i - (slowLength - fastLength)]);
@@ -229,11 +211,8 @@ export const calculateMACD = (
   return { macd, signal, histogram };
 };
 
-// Generate trading signals based on technical indicators
 export const generateSignals = (indicators: TechnicalIndicators): string[] => {
   const signals: string[] = [];
-  
-  // Stochastic Oversold/Overbought
   if (indicators.stochasticK !== null && indicators.stochasticD !== null) {
     if (indicators.stochasticK < 20 && indicators.stochasticD < 20) {
       signals.push("Stochastic indicates oversold conditions (below 20)");
@@ -319,10 +298,8 @@ const generateMockData = (symbol: string, currentPrice: number): TechnicalIndica
   return mockIndicators;
 };
 
-// Compute all technical indicators for a given symbol
 export const calculateTechnicalIndicators = async (symbol: string, currentPrice: number): Promise<TechnicalIndicators> => {
   try {
-    // Fetch historical data
     const historicalPrices = await fetchHistoricalPrices(symbol);
     
     if (historicalPrices.length === 0) {
@@ -330,25 +307,14 @@ export const calculateTechnicalIndicators = async (symbol: string, currentPrice:
       return generateMockData(symbol, currentPrice);
     }
     
-    // Extract closing prices
     const closingPrices = historicalPrices.map(price => price.close);
-    
-    // Calculate indicators
-    // EMAs
     const ema5 = calculateEMA(closingPrices, 5);
     const ema10 = calculateEMA(closingPrices, 10);
     const ema20 = calculateEMA(closingPrices, 20);
     const ema50 = calculateEMA(closingPrices, 50);
-    
-    // Stochastic
     const stochastic = calculateStochastic(historicalPrices);
-    
-    // RSI
     const rsi = calculateRSI(historicalPrices);
-    
-    // MACD
     const macd = calculateMACD(closingPrices);
-    
     const indicators: TechnicalIndicators = {
       symbol,
       currentPrice,

@@ -3,7 +3,6 @@ import './App.css';
 import StockTicker from './components/StockTicker';
 import PortfolioManager from './components/PortfolioManager';
 
-// Tab types
 type TabType = 'stockTicker' | 'portfolioManager';
 
 function App() {

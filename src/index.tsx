@@ -3,8 +3,6 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-
-// Add Buffer polyfill for browser environment
 import { Buffer } from 'buffer';
 window.Buffer = Buffer;
 

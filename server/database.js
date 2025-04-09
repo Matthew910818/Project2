@@ -1,21 +1,17 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-// Connect to SQLite database
 const dbPath = path.resolve(__dirname, 'stock_tracker.db');
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('Error connecting to the database:', err.message);
   } else {
     console.log('Connected to SQLite database');
-    // Create tables if they don't exist
     createTables();
   }
 });
 
-// Create necessary tables
 const createTables = () => {
-  // Stock purchases table
   db.run(`
     CREATE TABLE IF NOT EXISTS stock_purchases (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,12 +30,10 @@ const createTables = () => {
   });
 };
 
-// Add a new stock purchase record
 const addStockPurchase = (purchase) => {
   return new Promise((resolve, reject) => {
     const { symbol, quantity, purchasePrice, notes } = purchase;
     
-    // Validate numeric fields
     const validQuantity = parseFloat(quantity);
     const validPrice = parseFloat(purchasePrice);
     
@@ -47,7 +41,6 @@ const addStockPurchase = (purchase) => {
       return reject(new Error('Quantity and purchase price must be valid numbers'));
     }
     
-    // Format the date in ISO format
     const purchaseDate = new Date().toISOString();
     
     db.run(
@@ -73,7 +66,6 @@ const addStockPurchase = (purchase) => {
   });
 };
 
-// Get all purchases for a specific stock
 const getStockPurchases = (symbol) => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -100,7 +92,6 @@ const getStockPurchases = (symbol) => {
   });
 };
 
-// Get all stock purchases
 const getAllStockPurchases = () => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -125,7 +116,6 @@ const getAllStockPurchases = () => {
   });
 };
 
-// Get portfolio summary (grouped by symbol)
 const getPortfolioSummary = () => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -145,7 +135,6 @@ const getPortfolioSummary = () => {
           console.error('Error getting portfolio summary:', err.message);
           reject(err);
         } else {
-          // Format data to ensure proper types
           const formattedRows = rows.map(row => ({
             symbol: row.symbol,
             total_shares: parseFloat(row.total_shares),
@@ -159,12 +148,10 @@ const getPortfolioSummary = () => {
   });
 };
 
-// Update a stock purchase record
 const updateStockPurchase = (id, updates) => {
   return new Promise((resolve, reject) => {
     const { quantity, purchasePrice, notes } = updates;
     
-    // Validate numeric fields
     const validQuantity = parseFloat(quantity);
     const validPrice = parseFloat(purchasePrice);
     
@@ -198,7 +185,6 @@ const updateStockPurchase = (id, updates) => {
   });
 };
 
-// Delete a stock purchase record
 const deleteStockPurchase = (id) => {
   return new Promise((resolve, reject) => {
     db.run(
@@ -220,7 +206,6 @@ const deleteStockPurchase = (id) => {
   });
 };
 
-// Clean up database connection when the application closes
 process.on('SIGINT', () => {
   db.close((err) => {
     if (err) {

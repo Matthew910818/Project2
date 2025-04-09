@@ -1,8 +1,6 @@
 import WebSocket from 'isomorphic-ws';
 import * as protobuf from 'protobufjs';
 import { Buffer } from 'buffer/';
-
-// Interface for Yahoo Finance ticker data
 export interface YahooTickerData {
   id: string;
   price: number;
@@ -39,14 +37,11 @@ export interface YahooTickerData {
   marketcap?: number;
 }
 
-// Interface for Yahoo Finance JSON wrapper message
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface YahooFinanceMessage {
   type: string;
   message: string; // Base64 encoded protobuf message
 }
 
-// Interface for the stock data
 export interface StockData {
   id: string;
   price: number;
@@ -64,7 +59,6 @@ export interface StockData {
   rawData?: any; // Adding raw data for debugging
 }
 
-// Store for raw message logs
 export interface MessageLog {
   timestamp: string;
   type: string;
@@ -76,7 +70,6 @@ export interface MessageLog {
 // WebSocket URL with version parameter
 const YAHOO_FINANCE_WS_URL = 'wss://streamer.finance.yahoo.com/';
 
-// Class to handle Yahoo Finance WebSocket connection
 export class YahooFinanceService {
   private ws: WebSocket | null = null;
   private subscribers: ((data: StockData) => void)[] = [];
@@ -85,8 +78,8 @@ export class YahooFinanceService {
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private symbols: string[] = [];
   private lastMessageTime: number = 0;
-  private messageLogs: MessageLog[] = []; // Store message logs
-  private maxLogSize = 100; // Maximum number of messages to store
+  private messageLogs: MessageLog[] = [];
+  private maxLogSize = 100;
   private wsUrl: string = YAHOO_FINANCE_WS_URL;
 
   constructor() {
@@ -102,17 +95,14 @@ export class YahooFinanceService {
     }
   }
 
-  // Get all message logs
   getMessageLogs(): MessageLog[] {
     return this.messageLogs;
   }
 
-  // Clear message logs
   clearMessageLogs(): void {
     this.messageLogs = [];
   }
 
-  // Add a message to the log
   private addMessageLog(log: MessageLog): void {
     this.messageLogs.unshift(log); // Add to beginning of array
     if (this.messageLogs.length > this.maxLogSize) {
@@ -120,17 +110,14 @@ export class YahooFinanceService {
     }
   }
 
-  // Set the WebSocket URL
   setWebSocketUrl(url: string): void {
     this.wsUrl = url;
-    // If already connected, reconnect with the new URL
     if (this.isConnected) {
       this.disconnect();
       this.connect(this.symbols);
     }
   }
 
-  // Get the current WebSocket URL
   getWebSocketUrl(): string {
     return this.wsUrl;
   }
@@ -147,8 +134,6 @@ export class YahooFinanceService {
 
     this.symbols = symbols;
     this.clearMessageLogs();
-    
-    // Log connection attempt
     this.addMessageLog({
       timestamp: new Date().toISOString(),
       type: 'CONNECTION_ATTEMPT',
@@ -156,14 +141,12 @@ export class YahooFinanceService {
       content: `Attempting to connect to ${this.wsUrl} with symbols: ${symbols.join(', ')}`
     });
     
-    // Use the updated WebSocket URL 
     this.ws = new WebSocket(this.wsUrl);
 
     this.ws.onopen = () => {
       console.log('WebSocket connected');
       this.isConnected = true;
       
-      // Log connection success
       const timestamp = new Date().toISOString();
       console.log('Connected at:', timestamp);
       this.addMessageLog({
@@ -181,8 +164,6 @@ export class YahooFinanceService {
     this.ws.onclose = (event) => {
       console.log('WebSocket disconnected');
       this.isConnected = false;
-      
-      // Log connection close
       this.addMessageLog({
         timestamp: new Date().toISOString(),
         type: 'CONNECTION_CLOSE',
@@ -190,7 +171,6 @@ export class YahooFinanceService {
         content: `WebSocket closed with code: ${event.code}, reason: ${event.reason || 'No reason provided'}`
       });
       
-      // Try to reconnect after a delay
       if (this.reconnectTimeout) {
         clearTimeout(this.reconnectTimeout);
       }
@@ -204,7 +184,6 @@ export class YahooFinanceService {
     this.ws.onerror = (error) => {
       console.error('WebSocket error:', error);
       
-      // Log connection error
       this.addMessageLog({
         timestamp: new Date().toISOString(),
         type: 'CONNECTION_ERROR',
@@ -217,38 +196,29 @@ export class YahooFinanceService {
       try {
         if (!this.yaticker) return;
         
-        // Update last message time
         this.lastMessageTime = Date.now();
         const timestamp = new Date().toISOString();
-        
-        // Create log entry object
         let logEntry: MessageLog = {
           timestamp,
           type: 'UNKNOWN',
           size: 0
         };
         
-        // Log raw data details based on type
         if (typeof event.data === 'string') {
           logEntry.type = 'STRING';
           logEntry.size = event.data.length;
-          // For string data, store the entire content if it's not too large
           if (event.data.length < 5000) {
             logEntry.content = event.data;
           } else {
             logEntry.content = `${event.data.substring(0, 500)}... [truncated, total length: ${event.data.length}]`;
           }
           
-          // Try to parse as JSON
           try {
             const jsonData = JSON.parse(event.data);
             logEntry.parsedData = jsonData;
             logEntry.type = 'JSON';
-            
-            // Add log for the JSON message
             this.addMessageLog(logEntry);
             
-            // If it's a heartbeat
             if (jsonData.type === 'heartbeat') {
               const heartbeatLog: MessageLog = {
                 timestamp,
@@ -261,7 +231,6 @@ export class YahooFinanceService {
               return;
             }
             
-            // Check if it's a wrapped pricing message with base64 data
             if (jsonData.type === 'pricing' && jsonData.message) {
               const decodingLog: MessageLog = {
                 timestamp,
@@ -272,13 +241,10 @@ export class YahooFinanceService {
               };
               this.addMessageLog(decodingLog);
               
-              // Decode the base64 message
               try {
                 const base64Data = jsonData.message;
                 const messageBuffer = Buffer.from(base64Data, 'base64');
                 const decodedData = this.yaticker.decode(messageBuffer) as unknown as YahooTickerData;
-                
-                // Log successful decode
                 const decodedLog: MessageLog = {
                   timestamp,
                   type: 'PROTOBUF_DECODED',
@@ -306,7 +272,6 @@ export class YahooFinanceService {
               return;
             }
             
-            // Other JSON message types
             if (jsonData.data) {
               const processedLog: MessageLog = {
                 timestamp,
@@ -321,7 +286,6 @@ export class YahooFinanceService {
             
             return;
           } catch (e) {
-            // Not JSON or JSON parsing failed, continue with protobuf decoding attempt
             console.log('JSON parsing failed, trying direct protobuf decoding');
             const parsingErrorLog: MessageLog = {
               timestamp,
@@ -336,7 +300,6 @@ export class YahooFinanceService {
             try {
               const directDecodedData = this.yaticker.decode(Buffer.from(event.data, 'base64')) as unknown as YahooTickerData;
               
-              // Update log with decoded data
               const decodedLog: MessageLog = {
                 timestamp,
                 type: 'PROTOBUF_DECODED_DIRECT',
@@ -368,8 +331,6 @@ export class YahooFinanceService {
           logEntry.type = 'ARRAY_BUFFER';
           logEntry.size = event.data.byteLength;
           logEntry.content = `ArrayBuffer of size ${event.data.byteLength} bytes`;
-          
-          // Log the ArrayBuffer
           this.addMessageLog(logEntry);
           
           // Try to decode ArrayBuffer directly
@@ -406,11 +367,8 @@ export class YahooFinanceService {
           logEntry.type = 'BLOB';
           logEntry.size = blob.size;
           logEntry.content = `Blob of size ${blob.size} bytes`;
-          
-          // Handle Blob data by reading it as text
           this.addMessageLog(logEntry);
           
-          // Try to read blob as text
           const blobReader = new FileReader();
           blobReader.onload = () => {
             const blobText = blobReader.result as string;
@@ -423,7 +381,6 @@ export class YahooFinanceService {
             };
             this.addMessageLog(blobLog);
             
-            // Try to parse as JSON
             try {
               const jsonData = JSON.parse(blobText);
               const jsonBlobLog: MessageLog = {
@@ -434,8 +391,6 @@ export class YahooFinanceService {
                 parsedData: jsonData
               };
               this.addMessageLog(jsonBlobLog);
-              
-              // Check if it's a wrapped pricing message with base64 data
               if (jsonData.type === 'pricing' && jsonData.message) {
                 try {
                   const base64Data = jsonData.message;
@@ -451,7 +406,6 @@ export class YahooFinanceService {
                   };
                   this.addMessageLog(protobufBlobLog);
                   
-                  // Process the data
                   const stockData = this.formatStockData(decodedData);
                   stockData.rawData = decodedData;
                   this.notifySubscribers(stockData);
@@ -467,7 +421,6 @@ export class YahooFinanceService {
                 return;
               }
             } catch (e) {
-              // Not JSON, try to decode with protobuf directly
               try {
                 const blobData = Buffer.from(blobText, 'base64');
                 const decodedData = this.yaticker?.decode(blobData) as unknown as YahooTickerData;
@@ -519,7 +472,6 @@ export class YahooFinanceService {
         console.error('Error processing message:', error);
         console.error('Error details:', (error as Error).message);
         
-        // Log the error
         this.addMessageLog({
           timestamp: new Date().toISOString(),
           type: 'PROCESSING_ERROR',
@@ -539,14 +491,11 @@ export class YahooFinanceService {
     this.symbols = symbols;
     console.log('Subscribing to symbols:', symbols);
     
-    // Send subscription message
     const subscriptionMessage = JSON.stringify({
       subscribe: symbols
     });
     
     console.log('Sending subscription message:', subscriptionMessage);
-    
-    // Log the subscription message
     this.addMessageLog({
       timestamp: new Date().toISOString(),
       type: 'SUBSCRIBE_REQUEST',
@@ -585,7 +534,6 @@ export class YahooFinanceService {
     };
   }
 
-  // Get the time since last message in seconds
   getTimeSinceLastMessage(): number {
     if (this.lastMessageTime === 0) return -1;
     return (Date.now() - this.lastMessageTime) / 1000;
@@ -633,7 +581,6 @@ export class YahooFinanceService {
   }
 }
 
-// Create and export a singleton instance
 export const yahooFinanceService = new YahooFinanceService();
 
 export default yahooFinanceService; 

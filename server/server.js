@@ -6,30 +6,23 @@ const sgMail = require('@sendgrid/mail');
 const database = require('./database');
 const path = require('path');
 
-// Load environment variables from parent directory
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
-// Initialize Express app
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Initialize OpenAI client
 const openAI = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Initialize SendGrid
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
 
-// Helper function to extract JSON from OpenAI text response
 const extractJSON = (text) => {
-  // Try to find JSON content in the response
   const jsonRegex = /\{[\s\S]*\}/;
   const match = text.match(jsonRegex);
   
@@ -41,7 +34,6 @@ const extractJSON = (text) => {
     }
   }
   
-  // If we can't extract valid JSON, construct a basic response
   return {
     sentiment: "neutral",
     explanation: "Unable to extract proper analysis from response.",
@@ -49,7 +41,6 @@ const extractJSON = (text) => {
   };
 };
 
-// Send email notification endpoint
 app.post('/api/send-email', async (req, res) => {
   try {
     const { 
@@ -88,8 +79,6 @@ app.post('/api/send-email', async (req, res) => {
   }
 });
 
-// Stock purchase API endpoints
-// Add a new stock purchase
 app.post('/api/purchases', async (req, res) => {
   try {
     const { symbol, quantity, purchasePrice, notes } = req.body;
@@ -98,7 +87,6 @@ app.post('/api/purchases', async (req, res) => {
       return res.status(400).json({ error: 'Symbol, quantity, and purchase price are required' });
     }
     
-    // Ensure proper float parsing
     const numQuantity = parseFloat(quantity);
     const numPrice = parseFloat(purchasePrice);
     
@@ -120,7 +108,6 @@ app.post('/api/purchases', async (req, res) => {
   }
 });
 
-// Get all purchases for a specific stock
 app.get('/api/purchases/:symbol', async (req, res) => {
   try {
     const { symbol } = req.params;
@@ -132,7 +119,6 @@ app.get('/api/purchases/:symbol', async (req, res) => {
   }
 });
 
-// Get all stock purchases
 app.get('/api/purchases', async (req, res) => {
   try {
     const purchases = await database.getAllStockPurchases();
@@ -143,7 +129,6 @@ app.get('/api/purchases', async (req, res) => {
   }
 });
 
-// Get portfolio summary
 app.get('/api/portfolio', async (req, res) => {
   try {
     const summary = await database.getPortfolioSummary();
@@ -154,7 +139,6 @@ app.get('/api/portfolio', async (req, res) => {
   }
 });
 
-// Update a stock purchase
 app.put('/api/purchases/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -163,8 +147,7 @@ app.put('/api/purchases/:id', async (req, res) => {
     if (quantity === undefined || quantity === '' || purchasePrice === undefined || purchasePrice === '') {
       return res.status(400).json({ error: 'Quantity and purchase price are required' });
     }
-    
-    // Ensure proper float parsing
+
     const numQuantity = parseFloat(quantity);
     const numPrice = parseFloat(purchasePrice);
     
@@ -185,7 +168,6 @@ app.put('/api/purchases/:id', async (req, res) => {
   }
 });
 
-// Delete a stock purchase
 app.delete('/api/purchases/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -197,7 +179,6 @@ app.delete('/api/purchases/:id', async (req, res) => {
   }
 });
 
-// Analyze sentiment endpoint
 app.post('/api/analyze-sentiment', async (req, res) => {
   try {
     const { symbol } = req.body;
@@ -238,13 +219,11 @@ app.post('/api/analyze-sentiment', async (req, res) => {
     console.log("Raw OpenAI response:", content);
     
     try {
-      // First try direct JSON parsing
       const result = JSON.parse(content);
       return res.json(result);
     } catch (error) {
       console.error("Failed to parse OpenAI response as JSON, trying to extract:", error);
       
-      // If direct parsing fails, try to extract JSON from the response
       const extractedResult = extractJSON(content);
       console.log("Extracted result:", extractedResult);
       
@@ -263,7 +242,6 @@ app.post('/api/analyze-sentiment', async (req, res) => {
   }
 });
 
-// Combined analysis endpoint
 app.post('/api/combine-analysis', async (req, res) => {
   try {
     const { symbol, technicalAnalysis, price, change } = req.body;
@@ -304,13 +282,11 @@ app.post('/api/combine-analysis', async (req, res) => {
     console.log("Raw OpenAI response:", content);
     
     try {
-      // First try direct JSON parsing
       const result = JSON.parse(content);
       return res.json(result);
     } catch (error) {
       console.error("Failed to parse OpenAI response as JSON, trying to extract:", error);
       
-      // If direct parsing fails, try to extract JSON from the response
       const extractedResult = extractJSON(content);
       console.log("Extracted result:", extractedResult);
       
@@ -329,7 +305,6 @@ app.post('/api/combine-analysis', async (req, res) => {
   }
 });
 
-// Start the server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

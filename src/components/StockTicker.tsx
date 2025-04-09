@@ -1,20 +1,16 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import yahooFinanceService, { StockData, MessageLog } from '../services/yahooFinanceService';
 import { analyzeStock, AnalysisResponse } from '../services/stockAnalysisService';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { TechnicalIndicators } from '../services/technicalAnalysisService';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { StockAnalysisResult } from '../services/openaiService';
 
 interface StockTickerProps {
   symbols: string[];
 }
 
-// Check if OpenAI API key is configured
 const isOpenAIConfigured = process.env.REACT_APP_OPENAI_API_KEY ? true : false;
 const isProjectKey = process.env.REACT_APP_OPENAI_API_KEY?.startsWith('sk-proj-') || false;
 
-// Check if API URL is accessible
 const API_URL = 'http://localhost:4000/api';
 
 const StockTicker: React.FC<StockTickerProps> = ({ symbols }) => {
@@ -37,7 +33,6 @@ const StockTicker: React.FC<StockTickerProps> = ({ symbols }) => {
   const [useMacdPositive, setUseMacdPositive] = useState<boolean>(process.env.REACT_APP_USE_MACD_POSITIVE !== 'false');
   const [useEmaAlignment, setUseEmaAlignment] = useState<boolean>(process.env.REACT_APP_USE_EMA_ALIGNMENT !== 'false');
 
-  // Update "time since last message" counter and message logs
   useEffect(() => {
     const timer = setInterval(() => {
       const timeSince = yahooFinanceService.getTimeSinceLastMessage();
@@ -69,7 +64,6 @@ const StockTicker: React.FC<StockTickerProps> = ({ symbols }) => {
       setLastUpdateTime(new Date());
     });
 
-    // Cleanup on component unmount
     return () => {
       unsubscribe();
       yahooFinanceService.disconnect();
@@ -77,7 +71,6 @@ const StockTicker: React.FC<StockTickerProps> = ({ symbols }) => {
     };
   }, [symbols]);
 
-  // Check backend connection
   useEffect(() => {
     const checkBackendConnection = async () => {
       try {
@@ -94,13 +87,11 @@ const StockTicker: React.FC<StockTickerProps> = ({ symbols }) => {
     };
 
     checkBackendConnection();
-    // Check every 30 seconds
     const interval = setInterval(checkBackendConnection, 30000);
     
     return () => clearInterval(interval);
   }, []);
 
-  // Function to format price change with color
   const formatPriceChange = (change: number, changePercent: number) => {
     const color = change >= 0 ? 'green' : 'red';
     const sign = change >= 0 ? '+' : '';
@@ -111,7 +102,6 @@ const StockTicker: React.FC<StockTickerProps> = ({ symbols }) => {
     );
   };
   
-  // Function to toggle debug mode
   const toggleDebugMode = useCallback(() => {
     setDebugMode(prev => !prev);
     if (!debugMode) {
@@ -120,12 +110,10 @@ const StockTicker: React.FC<StockTickerProps> = ({ symbols }) => {
     }
   }, [debugMode]);
   
-  // Function to toggle message logs view
   const toggleMessageLogs = useCallback(() => {
     setShowMessageLogs(prev => !prev);
   }, []);
   
-  // Function to reconnect with the same symbols
   const handleReconnect = useCallback(() => {
     if (symbols.length > 0) {
       yahooFinanceService.disconnect();
@@ -134,8 +122,7 @@ const StockTicker: React.FC<StockTickerProps> = ({ symbols }) => {
       }, 1000);
     }
   }, [symbols]);
-  
-  // Calculate time difference
+
   const getTimeDifference = (timestamp: Date) => {
     const now = new Date();
     const diffMs = now.getTime() - timestamp.getTime();
@@ -146,12 +133,10 @@ const StockTicker: React.FC<StockTickerProps> = ({ symbols }) => {
     return `${Math.floor(diffSec / 3600)} hours ago`;
   };
 
-  // Function to analyze a stock
   const handleAnalyzeStock = async (symbol: string) => {
     if (!stocks[symbol] || analyzing[symbol]) return;
     
     try {
-      // Set analyzing flag
       setAnalyzing(prev => ({ ...prev, [symbol]: true }));
       
       const stock = stocks[symbol];
@@ -162,20 +147,16 @@ const StockTicker: React.FC<StockTickerProps> = ({ symbols }) => {
         true // Send email if recommended
       );
       
-      // Store analysis results
       setAnalyses(prev => ({ ...prev, [symbol]: analysis }));
       
-      // Automatically show analysis
       setShowAnalysis(prev => ({ ...prev, [symbol]: true }));
     } catch (error) {
       console.error(`Error analyzing ${symbol}:`, error);
     } finally {
-      // Clear analyzing flag
       setAnalyzing(prev => ({ ...prev, [symbol]: false }));
     }
   };
   
-  // Function to toggle showing analysis
   const toggleAnalysis = (symbol: string) => {
     setShowAnalysis(prev => ({ 
       ...prev, 
@@ -183,7 +164,6 @@ const StockTicker: React.FC<StockTickerProps> = ({ symbols }) => {
     }));
   };
   
-  // Function to toggle WebSocket URL
   const toggleWebSocketVersion = useCallback(() => {
     const currentUrl = yahooFinanceService.getWebSocketUrl();
     const newUrl = currentUrl.includes('version=2') 
@@ -194,15 +174,12 @@ const StockTicker: React.FC<StockTickerProps> = ({ symbols }) => {
     setWsUrl(newUrl);
   }, []);
 
-  // Filter message logs
   const filteredLogs = filterType === 'ALL' 
     ? messageLogs 
     : messageLogs.filter(log => log.type === filterType);
 
-  // Get available log types
   const logTypes = ['ALL', ...Array.from(new Set(messageLogs.map(log => log.type)))];
 
-  // Format sentiment display
   const formatSentiment = (sentiment: string) => {
     let color = 'gray';
     if (sentiment === 'positive') color = 'green';
@@ -210,13 +187,11 @@ const StockTicker: React.FC<StockTickerProps> = ({ symbols }) => {
     return <span style={{ color }}>{sentiment}</span>;
   };
   
-  // Format technical indicators
   const formatIndicator = (value: number | null | undefined) => {
     if (value === null || value === undefined) return 'N/A';
     return value.toFixed(2);
   };
 
-  // Add a toggle function for alert settings
   const toggleAlertSettings = useCallback(() => {
     setShowAlertSettings(prev => !prev);
   }, []);

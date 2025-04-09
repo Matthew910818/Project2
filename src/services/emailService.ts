@@ -1,6 +1,3 @@
-// Email notification service
-// Note: In a production environment, you should use a server-side solution or a secure email API service
-
 import { StockAnalysisResult } from './openaiService';
 import { TechnicalIndicators } from './technicalAnalysisService';
 
@@ -8,20 +5,16 @@ export interface EmailConfig {
   recipientEmail: string;
 }
 
-// Default config (should be loaded from environment variables in production)
 const DEFAULT_CONFIG: EmailConfig = {
   recipientEmail: process.env.REACT_APP_EMAIL_RECIPIENT || '',
 };
-
-// Technical analysis criteria for sending notifications
 export interface TechnicalAlertCriteria {
-  rsiThreshold?: number;       // RSI below this value indicates oversold (bullish)
-  macdPositive?: boolean;      // MACD line above signal line (bullish)
-  emaAlignment?: boolean;      // EMA5 > EMA10 > EMA20 (bullish trend)
-  stochasticOversold?: number; // Stochastic K below this value indicates oversold
+  rsiThreshold?: number;      
+  macdPositive?: boolean;     
+  emaAlignment?: boolean;      
+  stochasticOversold?: number;
 }
 
-// Default technical criteria for sending alerts
 export const DEFAULT_TECHNICAL_CRITERIA: TechnicalAlertCriteria = {
   rsiThreshold: 30,
   macdPositive: true,
@@ -29,7 +22,6 @@ export const DEFAULT_TECHNICAL_CRITERIA: TechnicalAlertCriteria = {
   stochasticOversold: 20
 };
 
-// Check if technical indicators meet the criteria for notification
 export const meetsTechnicalCriteria = (
   technicalAnalysis: TechnicalIndicators,
   criteria: TechnicalAlertCriteria = DEFAULT_TECHNICAL_CRITERIA
@@ -45,7 +37,7 @@ export const meetsTechnicalCriteria = (
     }
   }
   
-  // Check MACD (positive momentum)
+  // Check MACD 
   if (criteria.macdPositive && technicalAnalysis.macd != null) {
     criteriaCount++;
     if (technicalAnalysis.macd > 0) {
@@ -53,7 +45,7 @@ export const meetsTechnicalCriteria = (
     }
   }
   
-  // Check EMA alignment (uptrend)
+  // Check EMA alignment
   if (criteria.emaAlignment && 
       technicalAnalysis.ema5 != null && 
       technicalAnalysis.ema10 != null && 
@@ -65,7 +57,7 @@ export const meetsTechnicalCriteria = (
     }
   }
   
-  // Check Stochastic (oversold condition)
+  // Check Stochastic 
   if (criteria.stochasticOversold !== undefined && 
       technicalAnalysis.stochasticK != null) {
     criteriaCount++;
@@ -73,12 +65,9 @@ export const meetsTechnicalCriteria = (
       metCount++;
     }
   }
-  
-  // Require at least 50% of the criteria to be met
   return criteriaCount > 0 && (metCount / criteriaCount) >= 0.5;
 };
 
-// Send technical analysis notification when criteria are met
 export const sendTechnicalAlertEmail = async (
   symbol: string,
   price: number,
@@ -88,7 +77,6 @@ export const sendTechnicalAlertEmail = async (
   config: EmailConfig = DEFAULT_CONFIG
 ): Promise<boolean> => {
   try {
-    // Create email content
     const subject = `Technical Alert: ${symbol} at $${price.toFixed(2)}`;
     const text = `Technical Analysis Alert for ${symbol}
     Current Price: $${price.toFixed(2)} (${change >= 0 ? '+' : ''}${change.toFixed(2)}%)
@@ -135,10 +123,8 @@ export const sendTechnicalAlertEmail = async (
       <p>This alert was generated automatically by your Stock Price Tracker application.</p>
     `;
 
-    // Log for debugging
     console.log(`Sending technical alert email with subject: ${subject}`);
     
-    // Send the email via our server endpoint
     const response = await fetch('http://localhost:4000/api/send-email', {
       method: 'POST',
       headers: {
@@ -167,7 +153,6 @@ export const sendTechnicalAlertEmail = async (
   }
 };
 
-// Send notification via Email API
 export const sendBuyRecommendationEmail = async (
   symbol: string,
   price: number,
@@ -177,10 +162,7 @@ export const sendBuyRecommendationEmail = async (
   config: EmailConfig = DEFAULT_CONFIG
 ): Promise<boolean> => {
   try {
-    // Format technical indicators as a string
     const technicalIndicatorsStr = technicalAnalysis.indicators.join('\n- ');
-    
-    // Create email content
     const subject = `Buy Recommendation Alert: ${symbol} at $${price.toFixed(2)}`;
     const text = `Buy Recommendation for ${symbol}
     Current Price: $${price.toFixed(2)} (${change >= 0 ? '+' : ''}${change.toFixed(2)}%)
@@ -230,10 +212,8 @@ export const sendBuyRecommendationEmail = async (
       <p>This recommendation was generated automatically by your Stock Price Tracker application.</p>
     `;
 
-    // Log for debugging
     console.log(`Sending buy recommendation email with subject: ${subject}`);
     
-    // Send the email via our server endpoint
     const response = await fetch('http://localhost:4000/api/send-email', {
       method: 'POST',
       headers: {

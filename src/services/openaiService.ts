@@ -1,18 +1,12 @@
-// OpenAI service using backend API
-
-// Simple interface for stock analysis results
 export interface StockAnalysisResult {
   sentiment: string;
   explanation: string;
   buyRecommendation: boolean;
 }
 
-// API URL
 const API_URL = 'http://localhost:4000/api';
 
-// Analyze sentiment for a stock symbol
 export const analyzeSentiment = async (symbol: string): Promise<StockAnalysisResult> => {
-  // Default response if API fails
   const defaultResponse: StockAnalysisResult = {
     sentiment: "neutral",
     explanation: "Unable to analyze sentiment at this time.",
@@ -20,7 +14,6 @@ export const analyzeSentiment = async (symbol: string): Promise<StockAnalysisRes
   };
   
   try {
-    // Call backend API
     const response = await fetch(`${API_URL}/analyze-sentiment`, {
       method: 'POST',
       headers: {
@@ -33,7 +26,6 @@ export const analyzeSentiment = async (symbol: string): Promise<StockAnalysisRes
       const errorData = await response.json();
       console.error('API error:', errorData);
       
-      // Use fallback data if provided by the server
       if (errorData.fallback) {
         return errorData.fallback;
       }
@@ -41,7 +33,6 @@ export const analyzeSentiment = async (symbol: string): Promise<StockAnalysisRes
       return defaultResponse;
     }
     
-    // Parse the result
     const result = await response.json();
     return result;
   } catch (error) {
@@ -50,14 +41,12 @@ export const analyzeSentiment = async (symbol: string): Promise<StockAnalysisRes
   }
 };
 
-// Combine technical analysis with sentiment
 export const combineAnalysis = async (
   symbol: string, 
   technicalAnalysis: string, 
   price: number,
   change: number
 ): Promise<StockAnalysisResult> => {
-  // Default response if API fails
   const defaultResponse: StockAnalysisResult = {
     sentiment: "neutral",
     explanation: "Unable to generate recommendation at this time.",
@@ -65,7 +54,6 @@ export const combineAnalysis = async (
   };
   
   try {
-    // Call backend API
     const response = await fetch(`${API_URL}/combine-analysis`, {
       method: 'POST',
       headers: {
@@ -83,7 +71,6 @@ export const combineAnalysis = async (
       const errorData = await response.json();
       console.error('API error:', errorData);
       
-      // Use fallback data if provided by the server
       if (errorData.fallback) {
         return errorData.fallback;
       }
@@ -91,7 +78,6 @@ export const combineAnalysis = async (
       return defaultResponse;
     }
     
-    // Parse the result
     const result = await response.json();
     return result;
   } catch (error) {

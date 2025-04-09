@@ -11,13 +11,11 @@ import {
 } from '../services/portfolioService';
 
 const PortfolioManager: React.FC = () => {
-  // State
   const [summary, setSummary] = useState<PortfolioSummary[]>([]);
   const [purchases, setPurchases] = useState<StockPurchase[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Form state
   const [formData, setFormData] = useState<StockPurchaseInput>({
     symbol: '',
     quantity: '',
@@ -28,7 +26,6 @@ const PortfolioManager: React.FC = () => {
   const [editId, setEditId] = useState<number | null>(null);
   const [isFormVisible, setIsFormVisible] = useState<boolean>(false);
 
-  // Load portfolio data
   const loadPortfolioData = async () => {
     try {
       setLoading(true);
@@ -49,25 +46,19 @@ const PortfolioManager: React.FC = () => {
     }
   };
 
-  // Load data on component mount
   useEffect(() => {
     loadPortfolioData();
   }, []);
 
-  // Handle form input changes
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    
-    // For numeric fields, allow direct editing
     let processedValue: string | number = value;
     
     if (name === 'quantity' || name === 'purchasePrice') {
-      // Only allow valid decimal number input (digits, one decimal point)
-      // Regex allows: empty string, digits only, or digits with one decimal point
       if (value === '' || /^\d*\.?\d*$/.test(value)) {
         processedValue = value;
       } else {
-        // Invalid input, keep previous value
         return;
       }
     } else if (name === 'symbol') {
@@ -80,11 +71,9 @@ const PortfolioManager: React.FC = () => {
     });
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Ensure values are valid numbers before submission
     const quantity = typeof formData.quantity === 'string' && formData.quantity.trim() !== ''
       ? parseFloat(formData.quantity)
       : typeof formData.quantity === 'number' ? formData.quantity : NaN;
@@ -109,14 +98,11 @@ const PortfolioManager: React.FC = () => {
       };
       
       if (editId) {
-        // Update existing purchase
         await updateStockPurchase(editId, validatedData);
       } else {
-        // Add new purchase
         await addStockPurchase(validatedData);
       }
       
-      // Reset form
       setFormData({
         symbol: '',
         quantity: '',
@@ -125,8 +111,6 @@ const PortfolioManager: React.FC = () => {
       });
       setEditId(null);
       setIsFormVisible(false);
-      
-      // Reload data
       await loadPortfolioData();
     } catch (err: any) {
       setError(err.message || 'Failed to save stock purchase');
@@ -136,7 +120,6 @@ const PortfolioManager: React.FC = () => {
     }
   };
 
-  // Edit a purchase
   const handleEdit = (purchase: StockPurchase) => {
     if (!purchase.id) return;
     
@@ -150,7 +133,6 @@ const PortfolioManager: React.FC = () => {
     setIsFormVisible(true);
   };
 
-  // Delete a purchase
   const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this purchase?')) return;
     
@@ -159,8 +141,6 @@ const PortfolioManager: React.FC = () => {
       setError(null);
       
       await deleteStockPurchase(id);
-      
-      // Reload data
       await loadPortfolioData();
     } catch (err: any) {
       setError(err.message || 'Failed to delete stock purchase');
@@ -170,7 +150,6 @@ const PortfolioManager: React.FC = () => {
     }
   };
 
-  // Format currency
   const formatCurrency = (value: number) => {
     if (isNaN(value)) return '$0.00';
     
@@ -180,18 +159,15 @@ const PortfolioManager: React.FC = () => {
     }).format(value);
   };
   
-  // Format quantity with appropriate decimal places
   const formatQuantity = (value: number) => {
     if (isNaN(value)) return '0';
     
-    // Show up to 8 decimal places, but trim trailing zeros
     return value.toLocaleString('en-US', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 8
     });
   };
   
-  // Format date safely
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return 'N/A';
     

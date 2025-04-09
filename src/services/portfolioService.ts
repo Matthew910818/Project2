@@ -1,9 +1,4 @@
-// Portfolio service - handles stock purchase tracking
-
-// API base URL
 const API_BASE_URL = 'http://localhost:4000/api';
-
-// Form input interface for stock purchase
 export interface StockPurchaseInput {
   id?: number;
   symbol: string;
@@ -13,7 +8,6 @@ export interface StockPurchaseInput {
   notes?: string;
 }
 
-// Database stock purchase interface
 export interface StockPurchase {
   id?: number;
   symbol: string;
@@ -23,7 +17,6 @@ export interface StockPurchase {
   notes?: string;
 }
 
-// Portfolio summary interface
 export interface PortfolioSummary {
   symbol: string;
   totalShares: number;
@@ -31,7 +24,6 @@ export interface PortfolioSummary {
   totalInvestment: number;
 }
 
-// Add a new stock purchase
 export const addStockPurchase = async (purchase: StockPurchaseInput): Promise<StockPurchase> => {
   try {
     const response = await fetch(`${API_BASE_URL}/purchases`, {
@@ -54,7 +46,6 @@ export const addStockPurchase = async (purchase: StockPurchaseInput): Promise<St
   }
 };
 
-// Get all purchases for a specific stock
 export const getStockPurchases = async (symbol: string): Promise<StockPurchase[]> => {
   try {
     const response = await fetch(`${API_BASE_URL}/purchases/${symbol}`);
@@ -71,7 +62,6 @@ export const getStockPurchases = async (symbol: string): Promise<StockPurchase[]
   }
 };
 
-// Get all stock purchases
 export const getAllStockPurchases = async (): Promise<StockPurchase[]> => {
   try {
     const response = await fetch(`${API_BASE_URL}/purchases`);
@@ -88,7 +78,6 @@ export const getAllStockPurchases = async (): Promise<StockPurchase[]> => {
   }
 };
 
-// Get portfolio summary
 export const getPortfolioSummary = async (): Promise<PortfolioSummary[]> => {
   try {
     const response = await fetch(`${API_BASE_URL}/portfolio`);
@@ -98,7 +87,6 @@ export const getPortfolioSummary = async (): Promise<PortfolioSummary[]> => {
       throw new Error(errorData.error || 'Failed to fetch portfolio summary');
     }
 
-    // Transform the response to match our interface
     const data = await response.json();
     return data.map((item: any) => ({
       symbol: item.symbol,
@@ -112,7 +100,6 @@ export const getPortfolioSummary = async (): Promise<PortfolioSummary[]> => {
   }
 };
 
-// Update a stock purchase
 export const updateStockPurchase = async (id: number, updates: Partial<StockPurchaseInput>): Promise<StockPurchase> => {
   try {
     const response = await fetch(`${API_BASE_URL}/purchases/${id}`, {
@@ -135,7 +122,6 @@ export const updateStockPurchase = async (id: number, updates: Partial<StockPurc
   }
 };
 
-// Delete a stock purchase
 export const deleteStockPurchase = async (id: number): Promise<{ id: number; deleted: boolean }> => {
   try {
     const response = await fetch(`${API_BASE_URL}/purchases/${id}`, {
